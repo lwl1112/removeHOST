@@ -1,0 +1,23 @@
+#!/bin/bash
+#PBS -l nodes=1:ppn=1
+#PBS -l walltime=72:00:00
+cd /N/dc2/scratch/wli6/removeHost
+bowtie2-build GCA_000001405.28_GRCh38.p13_genomic.fna host_DB
+
+bowtie2 -x host_DB -1 /geode2/home/u100/wli6/Karst/HIV/SRR961514_1.fastq -2 /geode2/home/u100/wli6/Karst/HIV/SRR961514_2.fastq -S HIV_mapped_and_unmapped.sam
+samtools view -bS HIV_mapped_and_unmapped.sam > HIV_mapped_and_unmapped.bam
+samtools view -b -f 12 -F 256 HIV_mapped_and_unmapped.bam > HIV_bothEndsUnmapped.bam
+samtools sort -n HIV_bothEndsUnmapped.bam -o HIV_bothEndsUnmapped_sorted.bam
+#bedtools bamtofastq -i HIV_bothEndsUnmapped_sorted.bam -fq HIV_host_removed_r1.fastq -fq2 HIV_host_removed_r2.fastq
+samtools bam2fq HIV_bothEndsUnmapped_sorted.bam > HIV_bothEndsUnmapped_sorted.fastq 
+cat HIV_bothEndsUnmapped_sorted.fastq | grep '^@.*/1$' -A 3 --no-group-separator > HIV_host_removed_r1.fastq 
+cat HIV_bothEndsUnmapped_sorted.fastq | grep '^@.*/2$' -A 3 --no-group-separator > HIV_host_removed_r2.fastq
+
+bowtie2 -x host_DB -1 /N/dc2/scratch/wli6/SR/SRR10903401_1.fastq -2 /N/dc2/scratch/wli6/SR/SRR10903401_2.fastq -S Covid_mapped_and_unmapped.sam
+samtools view -bS Covid_mapped_and_unmapped.sam > Covid_mapped_and_unmapped.bam
+samtools view -b -f 12 -F 256 Covid_mapped_and_unmapped.bam > Covid_bothEndsUnmapped.bam
+samtools sort -n Covid_bothEndsUnmapped.bam -o Covid_bothEndsUnmapped_sorted.bam
+#bedtools bamtofastq -i Covid_bothEndsUnmapped_sorted.bam -fq Covid_host_removed_r1.fastq -fq2 Covid_host_removed_r2.fastq
+samtools bam2fq Covid_bothEndsUnmapped_sorted.bam > Covid_bothEndsUnmapped_sorted.fastq 
+cat Covid_bothEndsUnmapped_sorted.fastq | grep '^@.*/1$' -A 3 --no-group-separator > Covid_host_removed_r1.fastq 
+cat Covid_bothEndsUnmapped_sorted.fastq | grep '^@.*/2$' -A 3 --no-group-separator > Covid_host_removed_r2.fastq
